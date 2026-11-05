@@ -1,0 +1,24 @@
+services:
+  # 1. Контейнер с FastAPI приложением
+  web-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    env_file:
+      - .env
+    # Внутренний порт приложения 8000. Наружу его не выставляем (ports),
+    # так как доступ к нему должен быть только у Angie внутри сети Docker.
+    expose:
+      - "8000"
+
+  # 2. Контейнер веб-сервера Angie (Реверс-прокси)
+  angie-server:
+    image: docker.angie.software/angie:alpine-latest
+    restart: always
+    ports:
+      - "80:80"  # Маппинг внешнего порта 80 на внутренний порт 80 Angie
+    volumes:
+      - ./angie/angie.conf:/etc/angie/angie.conf:ro  # Монтируем конфиг в режиме read-only
+    depends_on:
+      - web-app  # Angie запустится только после того, как стартанет контейнер приложения
